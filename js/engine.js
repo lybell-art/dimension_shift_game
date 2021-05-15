@@ -71,6 +71,9 @@ class cubeSpace
 	render()
 	{
 		push();
+		strokeWidth(3);
+		stroke(25);
+		noFill();
 		rotateY(this.r / 180 * PI);
 		box(this.width, this.height, this.width);
 		pop();
@@ -83,8 +86,8 @@ class ballPlayer
 	{
 		this.pos=new p5.Vector();
 		this.dir=p5.Vector.random2D();
-		this.dir.mult(3);
-		this.radius = 5;
+		this.dir.mult(5);
+		this.radius = 10;
 		this.isMoving=true;
 	}
 	get gravityMag()
@@ -162,6 +165,8 @@ class ballPlayer
 	render()
 	{
 		push();
+		noStroke();
+		fill(255);
 		translate(0,0,700);
 		circle(this.x, this.y, this.radius * 2);
 		pop();
@@ -172,6 +177,7 @@ function drawOverlay()
 {
 	push();
 	translate(0,0,600);
+	noStroke();
 	fill(0,0,0,70);
 	plane(width, height);
 	pop();
