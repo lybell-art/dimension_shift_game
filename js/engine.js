@@ -154,7 +154,7 @@ function setup()
 {
 	frameRate(60);
 	createCanvas(windowWidth,windowHeight,WEBGL);
-	ortho();
+	ortho(-width/2, width/2, height/2, -height/2, -1000, 1000);
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	fill(255);
