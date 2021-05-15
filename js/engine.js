@@ -162,6 +162,7 @@ function setup()
 
 function draw()
 {
+	orbitControl();
 	background(255);
 	ingame();
 }
