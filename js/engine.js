@@ -74,12 +74,13 @@ class ballPlayer
 	{
 		this.pos=new p5.Vector();
 		this.dir=p5.Vector.random2D();
+		this.dir.mult(3);
 		this.radius = 5;
 		this.isMoving=true;
 	}
 	get gravity()
 	{
-		return 0.2;
+		return -0.2;
 	}
 	get x()
 	{
