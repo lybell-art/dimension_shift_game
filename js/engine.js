@@ -61,8 +61,10 @@ class cubeSpace
 	}
 	render()
 	{
+		push();
 		rotateY(this.r / 180 * PI);
 		box(this.width, this.height, this.width);
+		pop();
 	}
 }
 
