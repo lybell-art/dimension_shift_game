@@ -144,7 +144,7 @@ class ballPlayer
 function drawOverlay()
 {
 	push();
-	translate(0,0,-300);
+	translate(0,0,600);
 	fill(0,0,0,70);
 	plane(width, height);
 	pop();
@@ -154,7 +154,7 @@ function setup()
 {
 	frameRate(60);
 	createCanvas(windowWidth,windowHeight,WEBGL);
-	ortho(-width/2, width/2, height/2, -height/2, -1000, 1000);
+	ortho(-width/2, width/2, height/2, -height/2, -2000, 2000);
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	fill(255);
