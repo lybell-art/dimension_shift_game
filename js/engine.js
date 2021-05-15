@@ -89,6 +89,7 @@ class ballPlayer
 		this.dir.mult(5);
 		this.radius = 10;
 		this.isMoving=true;
+		this.applyGravity=true;
 	}
 	get gravityMag()
 	{
@@ -144,8 +145,8 @@ class ballPlayer
 			
 			let ground = this.checkNearestGround(map);
 			console.log(ground, Math.abs(this.pos.y - ground), this.gravityMag + this.radius, Math.abs(this.dir.y) );
-			if (Math.abs(this.pos.y - ground) <= this.gravityMag + this.radius && Math.abs(this.dir.y) <= this.gravityMag){
-				this.isMoving = false;
+			if (Math.abs(this.pos.y - ground) <= this.gravityMag*3 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*3){
+				this.applyGravity = false;
 				this.pos.y = ground  + this.radius;
 			}
 		}
@@ -154,7 +155,7 @@ class ballPlayer
 	{
 		if(this.isMoving)
 		{
-			if(!isRotating) this.dir.y += this.gravity;
+			if(!isRotating && this.applyGravity) this.dir.y += this.gravity;
 			let prePos=this.pos.copy();
 			let realDir=this.dir.copy();
 			if(isRotating) realDir.mult(0.1);
