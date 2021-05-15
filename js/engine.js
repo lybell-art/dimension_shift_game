@@ -71,7 +71,7 @@ class ballPlayer
 	constructor()
 	{
 		this.pos=new p5.Vector();
-		this.dir=new p5.Vector.random2D();
+		this.dir=p5.Vector.random2D();
 		this.radius = 5;
 		this.isMoving=true;
 	}
