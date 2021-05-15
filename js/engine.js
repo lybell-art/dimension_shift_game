@@ -146,6 +146,7 @@ class ballPlayer
 			console.log(ground, Math.abs(this.pos.y - ground), this.gravityMag + this.radius, Math.abs(this.dir.y) );
 			if (Math.abs(this.pos.y - ground) <= this.gravityMag*3 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*3){
 				this.applyGravity = false;
+				this.dir.y = 0;
 				this.pos.y = ground  + this.radius;
 			}
 			else this.applyGravity = true;
