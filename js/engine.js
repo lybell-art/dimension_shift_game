@@ -151,6 +151,13 @@ class ballPlayer
 			}
 			else this.applyGravity = true;
 		}
+		if(!this.applyGravity)
+		{
+			if(Math.abs(this.dir.x) < 0.4){
+				this.dir.x = 0;
+				this.isMoving = false;
+			}
+		}
 	}
 	move(isRotating, map)
 	{
