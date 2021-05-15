@@ -126,7 +126,7 @@ class ballPlayer
 	{
 		if(this.isMoving)
 		{
-			this.dir.y += this.gravity;
+			if(!isRotating) this.dir.y += this.gravity;
 			let prePos=this.pos.copy();
 			let realDir=this.dir.copy();
 			if(isRotating) realDir.mult(0.1);
