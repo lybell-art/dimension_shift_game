@@ -149,6 +149,7 @@ class ballPlayer
 				this.applyGravity = false;
 				this.pos.y = ground  + this.radius;
 			}
+			else this.applyGravity = true;
 		}
 	}
 	move(isRotating, map)
