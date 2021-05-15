@@ -107,8 +107,8 @@ class ballPlayer
 		}
 		if(this.pos.x - this.radius < map.leftBound)
 		{
-			this.pos.y = flip(this.pos.x, map.leftBound + this.radius);
-			this.dir.y = Math.abs(this.dir.x);
+			this.pos.x = flip(this.pos.x, map.leftBound + this.radius);
+			this.dir.x = Math.abs(this.dir.x);
 			collided = true;
 		}
 		else if(this.pos.x + this.radius > map.rightBound)
