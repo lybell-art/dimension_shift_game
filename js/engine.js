@@ -79,7 +79,7 @@ class ballPlayer
 	}
 	get gravity()
 	{
-		return 1;
+		return 0.2;
 	}
 	get x()
 	{
