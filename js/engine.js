@@ -15,14 +15,23 @@ class cubeSpace
 {
 	constructor()
 	{
-		this.width=500;
-		this.height=500;
+		this.row=10; // number Y
+		this.column=10; // number X
+		this.cellWidth=50;
 		this.level = 0;
 		this.bounding=[];
 		this.face = 0;
 		this.r = 0;
 		this.nextFace= 0;
 		this.rotateDir=0;
+	}
+	get width()
+	{
+		return this.column * this.cellWidth;
+	}
+	get height()
+	{
+		return this.row * this.cellWidth;
 	}
 	get upperBound()
 	{
@@ -90,6 +99,11 @@ class ballPlayer
 	{
 		return this.pos.y;
 	}
+	checkNearestGround(map, pos = null)
+	{
+		let target = (pos === null) ? this.pos.copy() : pos;
+		return map.upperBound;
+	}
 	checkBound(prepos, predir, map)
 	{
 		let collided = false;
@@ -120,6 +134,12 @@ class ballPlayer
 		if(collided)
 		{
 			this.dir.mult(0.9);
+			
+			let ground = this.checkNearestGround(map);
+			if (Math.abs(this.pos.y - ground) <= this.gravity && Math.abs(this.dir.y) <= this.gravity){
+				this.isMoving = false;
+				this.pos.y = ground;
+			}
 		}
 	}
 	move(isRotating, map)
