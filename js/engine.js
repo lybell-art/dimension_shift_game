@@ -172,8 +172,8 @@ function ingame()
 	let isRotating=false;
 	isRotating = world.operate();
 	ball.move(isRotating, world);
-	world.render();
-	if(isRotating) drawOverlay();
+//	world.render();
+//	if(isRotating) drawOverlay();
 	ball.render();
 }
 
