@@ -136,6 +136,7 @@ class ballPlayer
 	render()
 	{
 		push();
+		rect(-250, -250, 500, 500);
 		circle(this.x, this.y, this.radius * 2);
 		pop();
 	}
