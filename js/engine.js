@@ -94,25 +94,25 @@ class ballPlayer
 		let collided = false;
 		if(this.pos.y - this.radius < map.upperBound)
 		{
-			this.pos.y = flip(this.pos.y, map.upperBound);
+			this.pos.y = flip(this.pos.y, map.upperBound + this.radius);
 			this.dir.y = Math.abs(this.dir.y);
 			collided = true;
 		}
 		else if(this.pos.y + this.radius > map.lowerBound)
 		{
-			this.pos.y = flip(this.pos.y, map.lowerBound);
+			this.pos.y = flip(this.pos.y, map.lowerBound - this.radius);
 			this.dir.y = -Math.abs(this.dir.y);
 			collided = true;
 		}
 		if(this.pos.x - this.radius < map.leftBound)
 		{
-			this.pos.y = flip(this.pos.x, map.leftBound);
+			this.pos.y = flip(this.pos.x, map.leftBound + this.radius);
 			this.dir.y = Math.abs(this.dir.x);
 			collided = true;
 		}
 		else if(this.pos.x + this.radius > map.rightBound)
 		{
-			this.pos.x = flip(this.pos.x, map.rightBound);
+			this.pos.x = flip(this.pos.x, map.rightBound - this.radius);
 			this.dir.x = -Math.abs(this.dir.x);
 			collided = true;
 		}
