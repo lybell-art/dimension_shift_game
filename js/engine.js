@@ -169,7 +169,7 @@ class ballPlayer
 		push();
 		noStroke();
 		fill(255);
-		translate(0,0,700);
+		translate(0,0,980);
 		circle(this.x, this.y, this.radius * 2);
 		pop();
 	}
@@ -178,7 +178,7 @@ class ballPlayer
 function drawOverlay()
 {
 	push();
-	translate(0,0,600);
+	translate(0,0,970);
 	noStroke();
 	fill(0,0,0,70);
 	plane(width, height);
