@@ -71,7 +71,6 @@ class cubeSpace
 	render()
 	{
 		push();
-		strokeWidth(3);
 		stroke(25);
 		noFill();
 		rotateY(this.r / 180 * PI);
@@ -168,7 +167,7 @@ class ballPlayer
 	{
 		push();
 		noStroke();
-		fill(255);
+		fill("#24adaf");
 		translate(0,0,980);
 		circle(this.x, this.y, this.radius * 2);
 		pop();
@@ -192,6 +191,7 @@ function setup()
 	ortho(-width/2, width/2, height/2, -height/2, -2000, 2000);
 	world=new cubeSpace();
 	ball=new ballPlayer();
+	strokeWeight(3);
 //	fill(255);	
 }
 
