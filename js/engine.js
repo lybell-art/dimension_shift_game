@@ -136,9 +136,9 @@ class ballPlayer
 			this.dir.mult(0.9);
 			
 			let ground = this.checkNearestGround(map);
-			if (Math.abs(this.pos.y - ground) <= this.gravity && Math.abs(this.dir.y) <= this.gravity){
+			if (Math.abs(this.pos.y - ground) <= this.gravity + this.radius && Math.abs(this.dir.y) <= this.gravity){
 				this.isMoving = false;
-				this.pos.y = ground;
+				this.pos.y = ground  + this.radius;
 			}
 		}
 	}
