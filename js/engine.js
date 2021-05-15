@@ -180,8 +180,7 @@ function setup()
 	ortho(-width/2, width/2, height/2, -height/2, -2000, 2000);
 	world=new cubeSpace();
 	ball=new ballPlayer();
-//	fill(255);
-	
+//	fill(255);	
 }
 
 function draw()
@@ -197,7 +196,7 @@ function ingame()
 	isRotating = world.operate();
 	ball.move(isRotating, world);
 	world.render();
-//	if(isRotating) drawOverlay();
+	if(isRotating) drawOverlay();
 	ball.render();
 }
 
