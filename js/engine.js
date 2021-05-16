@@ -1,11 +1,11 @@
 let world, ball;
 let myShader;
-/*
+
 function getLevelData(level)
 {
 	let levelData = fetch("map/levels.json").then(response => response.json()).then(json => json[level]);
 	console.log(levelData);
-}*/
+}
 
 //util function
 
@@ -90,6 +90,10 @@ class cubeSpace
 		let x = _x - this.leftBound;
 		let y = _y - this.upperBound;
 		return [Math.floor(x/this.cellWidth), Math.floor(y/this.cellWidth)];
+	}
+	getCellBound(_x, _y, direction)
+	{
+		//_x * this.cellWidth
 	}
 	
 	//start:2, end:3
