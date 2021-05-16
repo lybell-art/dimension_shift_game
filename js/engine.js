@@ -234,7 +234,7 @@ function drawOverlay()
 
 function preload()
 {
-	myShader = loadShader("../shader/shader.vert", "../shader/shader.frag");
+	myShader = loadShader("shader/shader.vert", "shader/shader.frag");
 }
 
 function setup()
