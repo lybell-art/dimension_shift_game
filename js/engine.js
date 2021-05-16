@@ -248,6 +248,20 @@ class ballPlayer
 			this.dir.x = -Math.abs(this.dir.x);
 			collidedV = true;
 		}
+		let pre_grid = map.getGrid(prepos.x, prepos.y);
+		let cur_grid = map.getGrid(this.pos.x, this.pos.y);
+		let gridDistX = cur_grid[0]-pre_grid[0];
+		let gridDistY = cur_grid[1]-pre_grid[1];
+		/*
+		if(map.bounding[cur_grid[0]][cur_grid[1]] == 1)
+		{
+			if(gridDistX > 0)
+			{
+				this.pos.x = flip(this.pos.x, map.leftBound + this.radius);
+				this.dir.x = Math.abs(this.dir.x);
+				collidedV = true;
+			}
+		}*/
 		
 		if(collidedH)
 		{
@@ -255,7 +269,7 @@ class ballPlayer
 			
 			//임계점 이하일 때 중력 적용 안 함
 			let ground = this.checkNearestGround(map);
-			if (Math.abs(this.pos.y - ground) <= this.gravityMag*3 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*3){
+			if (Math.abs(this.pos.y - ground) <= this.gravityMag*4 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*4){
 				this.applyGravity = false;
 				this.dir.y = 0;
 				this.pos.y = ground  + this.radius;
