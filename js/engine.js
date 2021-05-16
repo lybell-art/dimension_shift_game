@@ -113,7 +113,9 @@ class cubeSpace
 	{
 		let x = _x - this.leftBound;
 		let y = _y - this.upperBound;
-		return [Math.floor(x/this.cellWidth), Math.floor(y/this.cellWidth)];
+		x=constrain(Math.floor(x/this.cellWidth), 0, this.column);
+		y=constrain(Math.floor(y/this.cellWidth), 0, this.row);
+		return [x,y];
 	}
 	getCellBound(_x, _y, direction)
 	{
@@ -269,11 +271,14 @@ class ballPlayer
 	constructor()
 	{
 		this.pos=new p5.Vector();
-		this.dir=p5.Vector.random2D();
-		this.dir.mult(5);
+		this.dir=new p5.Vector();
 		this.radius = 10;
-		this.isMoving=true;
+		this.isMoving=false;
 		this.applyGravity=true;
+		this.isLaunchStart=false;
+
+		this.preMouse=new p5.Vector();
+		this.controlVector=new p5.Vector();
 	}
 	
 	//gravity getter
@@ -302,8 +307,7 @@ class ballPlayer
 	initialize(map)
 	{
 		this.x=map.getCellBound(map.startX, map.startY, CENTERX);
-		this.y=map.getCellBound(map.startX, map.startY, DOWN) - this.radius - 10;
-		console.log(this.x, this.y);
+		this.y=map.getCellBound(map.startX, map.startY, DOWN) - this.radius;
 	}
 	
 	//nearest ground checking
@@ -352,12 +356,14 @@ class ballPlayer
 		}
 
 		//cell bound checking
+		let epsilon = 0.0001;
+
 		let dirXSign = Math.sign(this.dir.x);
 		let dirYSign = Math.sign(this.dir.y);
 		let pre_grid_x = map.getGrid(prepos.x + dirXSign*this.radius, prepos.y);
 		let cur_grid_x = map.getGrid(this.pos.x + dirXSign*this.radius, this.pos.y);
 
-		let pre_grid_y = map.getGrid(prepos.x, prepos.y + dirYSign*this.radius);
+		let pre_grid_y = map.getGrid(prepos.x, prepos.y + dirYSign*this.radius  - epsilon);
 		let cur_grid_y = map.getGrid(this.pos.x, this.pos.y + dirYSign*this.radius);
 
 		let gridDistX = cur_grid_x[0]-pre_grid_x[0];
@@ -365,6 +371,9 @@ class ballPlayer
 
 		let touchedX=map.bounding[cur_grid_x[1]][cur_grid_x[0]];
 		let touchedY=map.bounding[cur_grid_y[1]][cur_grid_y[0]];
+
+		let touchedV=map.bounding[cur_grid_y[1]][cur_grid_x[0]];
+
 		
 		if(touchedX == 1)
 		{
@@ -395,6 +404,11 @@ class ballPlayer
 				this.dir.y = Math.abs(this.dir.y);
 				collidedH = true;
 			}
+		}
+		if(touchedX == 0 && touchedY == 0 && touchedV == 1)
+		{
+			this.dir.x *= -0.9;
+			this.dir.y *= -0.9;
 		}
 		
 		if(collidedH)
@@ -428,6 +442,48 @@ class ballPlayer
 			}
 		}
 	}
+
+	prepareLaunch(x, y)
+	{
+		this.preMouse.set(x,y);
+		this.isLaunchStart = true;
+	}
+
+	control(x, y)
+	{
+		const maxMag= 8;
+		this.controlVector.set(this.preMouse.x-x, this.preMouse.y-y);
+		this.controlVector.mult(maxMag / 200);
+		if(this.controlVector.mag() > maxMag) this.controlVector.setMag(maxMag);
+	}
+
+	launch()
+	{
+		let mag=this.controlVector.mag();
+		this.isLaunchStart = false;
+		if(mag >= 1)
+		{
+			this.dir.set(this.controlVector);
+			this.isMoving=true;
+			this.applyGravity=true;
+		}
+	}
+
+	renderControlTrace()
+	{
+		let mag=this.controlVector.mag();
+		mag = Math.round(mag);
+		let newX = this.x;
+		let newY = this.y;
+		fill(255, 80);
+		for(let i=mag;i>0;i--)
+		{
+			newX += this.controlVector.x * 2;
+			newY += this.controlVector.y * 2;
+			circle(newX, newY, i);
+			newY += this.gravity * 2;
+		}
+	}
 	
 	//moving ball
 	move(isRotating, map)
@@ -448,8 +504,9 @@ class ballPlayer
 	{
 		push();
 		noStroke();
-		fill("#24adaf");
 		translate(0,0,980);
+		if(this.isLaunchStart) this.renderControlTrace();
+		fill("#ffffff");
 		circle(this.x, this.y, this.radius * 2);
 		pop();
 	}
@@ -494,8 +551,7 @@ function setup()
 
 function draw()
 {
-	background(255);
-	orbitControl();
+	background("#75d4ff");
 	if(isLoaded) ingame();
 }
 
@@ -503,6 +559,7 @@ function ingame()
 {
 	let isRotating=false;
 	isRotating = world.operate();
+	if(ball.isLaunchStart && mouseIsPressed) ball.control(mouseX, mouseY);
 	ball.move(isRotating, world);
 	world.render();
 	if(isRotating) drawOverlay();
@@ -517,8 +574,26 @@ function keyPressed() {
 	}
 }
 
+
+
+function mousePressed()
+{
+	if(!ball.isLaunchStart && !ball.isMoving)
+	{
+		ball.prepareLaunch(mouseX, mouseY);
+	}
+}
+
+function mouseReleased()
+{
+	if(ball.isLaunchStart)
+	{
+		ball.launch();
+	}
+}
+
 function windowResized()
 {
 	resizeCanvas(windowWidth, windowHeight, false);
-	ortho(-width/2, width/2, height/2, -height/2, -2000, 2000);
+	ortho(-width/2, width/2, -height/2, height/2, -2000, 2000);
 }
