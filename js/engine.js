@@ -1,4 +1,5 @@
 let world, ball;
+let myShader;
 
 function cycle(n, p, c)
 {
@@ -19,6 +20,7 @@ class cubeSpace
 		this.column=10; // number X
 		this.cellWidth=50;
 		this.level = 0;
+		this.cells=[];
 		this.bounding=[];
 		this.face = 0;
 		this.r = 0;
@@ -68,13 +70,51 @@ class cubeSpace
 		}
 		return false;
 	}
+	getGrid(_x, _y)
+	{
+		let x = _x - this.leftBound;
+		let y = _y - this.upperBound;
+		return [Math.floor(x/this.cellWidth), Math.floor(y/this.cellWidth)];
+	}
+	isStartEndPoint(mode)
+	{
+		return mode == 2 || mode == 3;
+	}
 	render()
 	{
 		push();
 		stroke(25);
 		noFill();
 		rotateY(this.r / 180 * PI);
+		strokeWeight(3);
 		box(this.width, this.height, this.width);
+		strokeWeight(1);
+		shader(myShader);
+		for(let x=0; x<this.column; x++)
+		{
+			for(let y=0;y<this.row;y++)
+			{
+				for(let z=0;z<this.column;z++)
+				{
+					let currentCell=this.cells[x][y][z];
+					if(currentCell == 0) continue;
+					switch(currentCell)
+					{
+						case 1:fill(255); break;
+						case 2:fill(0,255,0); break;
+						case 3:fill(255,255,0); break;
+					}
+					push();
+					translate(this.cellWidth * x - this.width / 2 + this.cellWidth/2, 
+						  -(this.cellWidth * y - this.height / 2 + this.cellWidth/2), 
+						  this.cellWidth * z - this.width / 2 + this.cellWidth/2 );
+					if( this.isStartEndPoint(currentCell) ) sphere(this.cellWidth / 3);
+					else box(this.cellWidth);
+					pop();
+				}
+			}
+		}
+		resetShader();
 		pop();
 	}
 }
