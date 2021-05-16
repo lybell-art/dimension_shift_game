@@ -3,6 +3,9 @@
     "level": 1,
     "row": 4,
     "column": 7,
+    "startX": 0,
+    "startY": 1,
+    "facing": 0,
     "cells": [
       [
         [0,0,0,0,0,0,0],
@@ -52,6 +55,9 @@
     "level": 2,
     "row": 4,
     "column": 8,
+    "startX": 0,
+    "startY": 3,
+    "facing": 0,
     "cells": [
       [
         [0,0,0,0,0,0,0,0],
@@ -107,6 +113,9 @@
     "level": 3,
     "row": 6,
     "column": 8,
+    "startX": 0,
+    "startY": 3,
+    "facing": 0,
     "cells": [
       [
         [0,0,0,0,0,0,0,0],
@@ -178,6 +187,9 @@
     "level": 4,
     "row": 6,
     "column": 8,
+    "startX": 1,
+    "startY": 1,
+    "facing": 0,
     "cells": [
       [
         [0,0,0,0,0,0,0,0],
@@ -249,6 +261,9 @@
     "level": 5,
     "row": 9,
     "column": 5,
+    "startX": 1,
+    "startY": 7,
+    "facing": 0,
     "cells": [
       [
         [0,0,0,0,0],
