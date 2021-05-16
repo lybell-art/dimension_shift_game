@@ -90,7 +90,7 @@ class cubeSpace
 		box(this.width, this.height, this.width);
 		strokeWeight(1);
 		shader(myShader);
-		for(let x=0; x<this.column; x++)
+/*		for(let x=0; x<this.column; x++)
 		{
 			for(let y=0;y<this.row;y++)
 			{
@@ -113,7 +113,7 @@ class cubeSpace
 					pop();
 				}
 			}
-		}
+		}*/
 		resetShader();
 		pop();
 	}
