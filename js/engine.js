@@ -1,6 +1,12 @@
 let world, ball;
 let myShader;
 
+function getLevelData(level)
+{
+	let levelData = fetch("levels.json").then(response => response.json()).then(json => json[level]);
+	console.log(levelData);
+}
+
 function cycle(n, p, c)
 {
 	let v=n+p;
