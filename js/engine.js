@@ -232,6 +232,11 @@ function drawOverlay()
 	pop();
 }
 
+function preload()
+{
+	myShader = loadShader("../shader/shader.vert", "../shader/shader.frag");
+}
+
 function setup()
 {
 	frameRate(60);
