@@ -1,11 +1,13 @@
-let world, ball;
+let world, ball, isLoaded=false;
 let myShader;
+const UP="up";
+const DOWN="down";
 
-function getLevelData(level)
+function fetchLevelData(level, callback)
 {
-	let levelData = fetch("map/levels.json").then(response => response.json()).then(json => json[level]);
-	console.log(levelData);
+	fetch("map/levels.json").then(res => res.json() ).then(json => callback(json[level]));
 }
+
 
 //util function
 
@@ -61,6 +63,16 @@ class cubeSpace
 	get rightBound(){
 		return this.width/2;
 	}
+	//load data
+	loadLevel(json)
+	{
+		console.log(json);
+		this.level = json.level;
+		this.row = json.row;
+		this.column = json.column;
+		this.cells = json.cells;
+		this.bounding = this.getBound(0);
+	}
 	//calling stage rotation
 	rotate(direction)
 	{
@@ -93,7 +105,17 @@ class cubeSpace
 	}
 	getCellBound(_x, _y, direction)
 	{
-		//_x * this.cellWidth
+		let halfHeight=height/2;
+		switch(direction){
+			case LEFT:
+				return _x * this.cellWidth + this.leftBound;
+			case RIGHT:
+				return (_x+1) * this.cellWidth + this.leftBound;
+			case UP:
+				return (_y) * this.cellWidth + this.upperBound;
+			case DOWN:
+				return (_y+1) * this.cellWidth + this.upperBound;
+		}
 	}
 	
 	//start:2, end:3
@@ -118,16 +140,20 @@ class cubeSpace
 		
 		//현재 바라보는 위치의 왼쪽 위부터 스캔합니다.
 		let res=[], xx=(face % 2 == 0)?x:z, zz;
-		for(let i=0; i<this.row; i++)
+		for(let i=0;i<this.row;i++)
 		{
 			res.push([]);
-			for(let j=0; j<this.column; j++)	
+			for(let j=0;j<this.column;j++) res[i].push(0);
+		}
+
+		for(let i=0; i<this.column; i++)
+		{
+			for(let j=0; j<this.row; j++)	
 			{
-				res[i].push(0);
 				zz=(face % 2 == 0)?z:x;
-				for(let k=0; k<Math.floor(this.column/2); k++)
+				for(let k=0; k<Math.ceil(this.column/2); k++)
 				{
-					let cell=this.cells[xx][j][zz];
+					let cell=(face % 2 == 0) ? this.cells[xx][j][zz] : this.cells[zz][j][xx];
 					if(cell !== 0 && !this.isStartEndPoint(cell))
 					{
 						res[j][i]=cell;
@@ -156,7 +182,7 @@ class cubeSpace
 		//draw objects
 		strokeWeight(1);
 		shader(myShader);
-/*		for(let x=0; x<this.column; x++)
+		for(let x=0; x<this.column; x++)
 		{
 			for(let y=0;y<this.row;y++)
 			{
@@ -172,14 +198,14 @@ class cubeSpace
 					}
 					push();
 					translate(this.cellWidth * x - this.width / 2 + this.cellWidth/2, 
-						  -(this.cellWidth * y - this.height / 2 + this.cellWidth/2), 
+						  this.cellWidth * y - this.height / 2 + this.cellWidth/2, 
 						  this.cellWidth * z - this.width / 2 + this.cellWidth/2 );
 					if( this.isStartEndPoint(currentCell) ) sphere(this.cellWidth / 3);
 					else box(this.cellWidth);
 					pop();
 				}
 			}
-		}*/
+		}
 		resetShader();
 		pop();
 	}
@@ -204,7 +230,7 @@ class ballPlayer
 		return 0.2;
 	}
 	get gravity(){
-		return -this.gravityMag;
+		return this.gravityMag;
 	}
 	
 	//position getter
@@ -214,12 +240,26 @@ class ballPlayer
 	get y(){
 		return this.pos.y;
 	}
+
+	//initialize
+	initialize()
+	{
+		this.pos.x=0;
+		this.pos.y=0;
+	}
 	
 	//nearest ground checking
 	checkNearestGround(map, pos = null)
 	{
 		let target = (pos === null) ? this.pos.copy() : pos;
-		return map.upperBound;
+		let posGrid= map.getGrid(this.pos.x, this.pos.y);
+		let gridX = posGrid[0], gridY = posGrid[1];
+		let i;
+		for(i=gridY; i<map.row; i++)
+		{
+			if(map.bounding[i][gridX] == 1) return map.getCellBound(gridX, i, UP);
+		}
+		return map.lowerBound;
 	}
 	
 	//bound check&reflection
@@ -252,42 +292,68 @@ class ballPlayer
 			this.dir.x = -Math.abs(this.dir.x);
 			collidedV = true;
 		}
-		let pre_grid = map.getGrid(prepos.x, prepos.y);
-		let cur_grid = map.getGrid(this.pos.x, this.pos.y);
+
+		//cell bound checking
+		let dirXSign = Math.sign(this.dir.x);
+		let dirYSign = Math.sign(this.dir.y);
+		let pre_grid = map.getGrid(prepos.x + dirXSign*this.radius, prepos.y + dirYSign*this.radius);
+		let cur_grid = map.getGrid(this.pos.x + dirXSign*this.radius, this.pos.y + dirYSign*this.radius);
 		let gridDistX = cur_grid[0]-pre_grid[0];
 		let gridDistY = cur_grid[1]-pre_grid[1];
-		/*
-		if(map.bounding[cur_grid[0]][cur_grid[1]] == 1)
+		
+		if(map.bounding[cur_grid[1]][cur_grid[0]] == 1)
 		{
 			if(gridDistX > 0)
 			{
-				this.pos.x = flip(this.pos.x, map.leftBound + this.radius);
+				this.pos.x = flip(this.pos.x, map.getCellBound(cur_grid[0], cur_grid[1], LEFT) - this.radius);
+				this.dir.x = -Math.abs(this.dir.x);
+				collidedV = true;
+			}
+			else if(gridDistX < 0)
+			{
+				this.pos.x = flip(this.pos.x, map.getCellBound(cur_grid[0], cur_grid[1], RIGHT) + this.radius);
 				this.dir.x = Math.abs(this.dir.x);
 				collidedV = true;
 			}
-		}*/
+
+			if(gridDistY > 0)
+			{
+				this.pos.y = flip(this.pos.y, map.getCellBound(cur_grid[0], cur_grid[1], UP) - this.radius);
+				this.dir.y = -Math.abs(this.dir.y);
+				collidedH = true;
+			}
+			else if(gridDistY < 0)
+			{
+				this.pos.y = flip(this.pos.y, map.getCellBound(cur_grid[0], cur_grid[1], DOWN) + this.radius);
+				this.dir.y = Math.abs(this.dir.y);
+				collidedH = true;
+			}
+		}
 		
 		if(collidedH)
 		{
 			this.dir.y *= 0.9;
+			this.dir.x *= 0.96;
 			
 			//임계점 이하일 때 중력 적용 안 함
 			let ground = this.checkNearestGround(map);
-			if (Math.abs(this.pos.y - ground) <= this.gravityMag*4 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*4){
+			if (Math.abs(this.pos.y - ground) <= this.gravityMag*5 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*5){
 				this.applyGravity = false;
 				this.dir.y = 0;
-				this.pos.y = ground  + this.radius;
+				this.pos.y = ground - this.radius;
 			}
 			else this.applyGravity = true;
 		}
 		if(collidedV)
 		{
 			this.dir.x *=0.9;
+			this.dir.y *= 0.96;
 		}
 		
 		//중력 적용 안 할 때-x축 방향으로만 움직임
 		if(!this.applyGravity)
 		{
+			this.dir.x *= 0.95; //마찰력 적용
 			//속도가 임계점 이하일 때 멈춤
 			if(Math.abs(this.dir.x) < 0.4){
 				this.dir.x = 0;
@@ -342,17 +408,19 @@ function setup()
 {
 	frameRate(60);
 	createCanvas(windowWidth,windowHeight,WEBGL);
-	ortho(-width/2, width/2, height/2, -height/2, -2000, 2000);
+	ortho(-width/2, width/2, -height/2, height/2, -2000, 2000);
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
+	fetchLevelData(1, function(json){world.loadLevel(json); ball.initialize(); isLoaded=true;});
 //	fill(255);	
 }
 
 function draw()
 {
 	background(255);
-	ingame();
+	orbitControl();
+	if(isLoaded) ingame();
 }
 
 function ingame()
@@ -367,8 +435,14 @@ function ingame()
 
 function keyPressed() {
 	if (keyCode === LEFT_ARROW) {
-		world.rotate(-1);
-	} else if (keyCode === RIGHT_ARROW) {
 		world.rotate(1);
+	} else if (keyCode === RIGHT_ARROW) {
+		world.rotate(-1);
 	}
+}
+
+function windowResized()
+{
+	resizeCanvas(windowWidth, windowHeight, false);
+	ortho(-width/2, width/2, height/2, -height/2, -2000, 2000);
 }
