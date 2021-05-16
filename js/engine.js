@@ -2,10 +2,12 @@ let world, ball, isLoaded=false;
 let myShader;
 const UP="up";
 const DOWN="down";
+const CENTERX="centerX";
+const CENTERY="centerY";
 
 function fetchLevelData(level, callback)
 {
-	fetch("map/levels.json").then(res => res.json() ).then(json => callback(json[level]));
+	fetch("map/levels.json").then(res => res.json() ).then(json => callback(json[level - 1]));
 }
 
 
@@ -38,9 +40,12 @@ class cubeSpace
 		this.cells=[]; // all cell's data
 		this.bounding=[]; // bounding box
 		this.face = 0; // current facing(0~4)
+		this.startX = 0; // ball's start x position
+		this.startY = 0; // ball's start y position
+
 		this.r = 0; // rotation degree(for animation)
 		this.nextFace= 0; // next facing - for rotating stage
-		this.rotateDir=0; // rotation directio
+		this.rotateDir=0; // rotation direction
 	}
 	//stage's width
 	get width(){
@@ -71,7 +76,14 @@ class cubeSpace
 		this.row = json.row;
 		this.column = json.column;
 		this.cells = json.cells;
-		this.bounding = this.getBound(0);
+		this.startX = (typeof(json.startX) === "number") ? json.startX : -1;
+		this.startY = (typeof(json.startY) === "number") ? json.startY : -1;
+		this.face = (typeof(json.startY) === "number") ? json.facing : 0;
+		this.bounding = this.getBound(this.face);
+		if(this.startX == -1 || this.startY == -1)
+		{
+			this.getStartPos(true);
+		}
 	}
 	//calling stage rotation
 	rotate(direction)
@@ -115,6 +127,10 @@ class cubeSpace
 				return (_y) * this.cellWidth + this.upperBound;
 			case DOWN:
 				return (_y+1) * this.cellWidth + this.upperBound;
+			case CENTERX:
+				return (_x+0.5) * this.cellWidth + this.leftBound;
+			case CENTERY:
+				return (_y+0.5) * this.cellWidth + this.upperBound;
 		}
 	}
 	
@@ -124,6 +140,41 @@ class cubeSpace
 		return mode == 2 || mode == 3;
 	}
 	
+	getStartPos(initialize = false)
+	{
+		let res;
+		if(initialize)
+		{
+			let isFound=false;
+			for(let p=0; p<4; p+=2)
+			{
+				this.face = p;
+				this.bounding = this.getBound(p);
+				for(let i=0;i<this.row; i++)
+				{
+					for(let j=0;j<this.column;j++)
+					{
+						if(this.bounding[i][j] == 2)
+						{
+							res={x:j, y:i};
+							this.startX = j;
+							this.startY = i;
+							isFound=true;
+							break;
+						}
+					}
+					if(isFound) break;
+				}
+				if(isFound) break;
+			}
+		}
+		else{
+			res={x:this.startX, y:this.startY};
+		}
+		console.log(res);
+		return res;
+	}
+
 	//get bounding box
 	getBound(_face=null)
 	{
@@ -154,7 +205,7 @@ class cubeSpace
 				for(let k=0; k<Math.ceil(this.column/2); k++)
 				{
 					let cell=(face % 2 == 0) ? this.cells[xx][j][zz] : this.cells[zz][j][xx];
-					if(cell !== 0 && !this.isStartEndPoint(cell))
+					if(cell !== 0)
 					{
 						res[j][i]=cell;
 						break;
@@ -240,19 +291,26 @@ class ballPlayer
 	get y(){
 		return this.pos.y;
 	}
+	set x(_x){
+		this.pos.x = _x;
+	}
+	set y(_y){
+		this.pos.y = _y;
+	}
 
 	//initialize
-	initialize()
+	initialize(map)
 	{
-		this.pos.x=0;
-		this.pos.y=0;
+		this.x=map.getCellBound(map.startX, map.startY, CENTERX);
+		this.y=map.getCellBound(map.startX, map.startY, DOWN) - this.radius - 10;
+		console.log(this.x, this.y);
 	}
 	
 	//nearest ground checking
 	checkNearestGround(map, pos = null)
 	{
 		let target = (pos === null) ? this.pos.copy() : pos;
-		let posGrid= map.getGrid(this.pos.x, this.pos.y);
+		let posGrid= map.getGrid(this.x, this.y);
 		let gridX = posGrid[0], gridY = posGrid[1];
 		let i;
 		for(i=gridY; i<map.row; i++)
@@ -296,35 +354,44 @@ class ballPlayer
 		//cell bound checking
 		let dirXSign = Math.sign(this.dir.x);
 		let dirYSign = Math.sign(this.dir.y);
-		let pre_grid = map.getGrid(prepos.x + dirXSign*this.radius, prepos.y + dirYSign*this.radius);
-		let cur_grid = map.getGrid(this.pos.x + dirXSign*this.radius, this.pos.y + dirYSign*this.radius);
-		let gridDistX = cur_grid[0]-pre_grid[0];
-		let gridDistY = cur_grid[1]-pre_grid[1];
+		let pre_grid_x = map.getGrid(prepos.x + dirXSign*this.radius, prepos.y);
+		let cur_grid_x = map.getGrid(this.pos.x + dirXSign*this.radius, this.pos.y);
+
+		let pre_grid_y = map.getGrid(prepos.x, prepos.y + dirYSign*this.radius);
+		let cur_grid_y = map.getGrid(this.pos.x, this.pos.y + dirYSign*this.radius);
+
+		let gridDistX = cur_grid_x[0]-pre_grid_x[0];
+		let gridDistY = cur_grid_y[1]-pre_grid_y[1];
+
+		let touchedX=map.bounding[cur_grid_x[1]][cur_grid_x[0]];
+		let touchedY=map.bounding[cur_grid_y[1]][cur_grid_y[0]];
 		
-		if(map.bounding[cur_grid[1]][cur_grid[0]] == 1)
+		if(touchedX == 1)
 		{
 			if(gridDistX > 0)
 			{
-				this.pos.x = flip(this.pos.x, map.getCellBound(cur_grid[0], cur_grid[1], LEFT) - this.radius);
+				this.pos.x = flip(this.pos.x, map.getCellBound(cur_grid_x[0], cur_grid_x[1], LEFT) - this.radius);
 				this.dir.x = -Math.abs(this.dir.x);
 				collidedV = true;
 			}
 			else if(gridDistX < 0)
 			{
-				this.pos.x = flip(this.pos.x, map.getCellBound(cur_grid[0], cur_grid[1], RIGHT) + this.radius);
+				this.pos.x = flip(this.pos.x, map.getCellBound(cur_grid_x[0], cur_grid_x[1], RIGHT) + this.radius);
 				this.dir.x = Math.abs(this.dir.x);
 				collidedV = true;
 			}
-
+		}
+		if(touchedY == 1)
+		{
 			if(gridDistY > 0)
 			{
-				this.pos.y = flip(this.pos.y, map.getCellBound(cur_grid[0], cur_grid[1], UP) - this.radius);
+				this.pos.y = flip(this.pos.y, map.getCellBound(cur_grid_y[0], cur_grid_y[1], UP) - this.radius);
 				this.dir.y = -Math.abs(this.dir.y);
 				collidedH = true;
 			}
 			else if(gridDistY < 0)
 			{
-				this.pos.y = flip(this.pos.y, map.getCellBound(cur_grid[0], cur_grid[1], DOWN) + this.radius);
+				this.pos.y = flip(this.pos.y, map.getCellBound(cur_grid_y[0], cur_grid_y[1], DOWN) + this.radius);
 				this.dir.y = Math.abs(this.dir.y);
 				collidedH = true;
 			}
@@ -399,6 +466,15 @@ function drawOverlay()
 	pop();
 }
 
+function loadLevel(level)
+{
+	isLoaded=false;
+	fetchLevelData(level, function(json){
+		world.loadLevel(json);
+		ball.initialize(world);
+		isLoaded=true;});
+}
+
 function preload()
 {
 	myShader = loadShader("shader/shader.vert", "shader/shader.frag");
@@ -412,7 +488,7 @@ function setup()
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
-	fetchLevelData(1, function(json){world.loadLevel(json); ball.initialize(); isLoaded=true;});
+	loadLevel(1);
 //	fill(255);	
 }
 
