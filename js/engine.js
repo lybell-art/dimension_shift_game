@@ -1,11 +1,11 @@
 let world, ball;
 let myShader;
-
+/*
 function getLevelData(level)
 {
 	let levelData = fetch("map/levels.json").then(response => response.json()).then(json => json[level]);
 	console.log(levelData);
-}
+}*/
 
 //util function
 
