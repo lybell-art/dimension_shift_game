@@ -4,6 +4,13 @@ const UP="up";
 const DOWN="down";
 const CENTERX="centerX";
 const CENTERY="centerY";
+const AIR=0;
+const WALL=1;
+const START_POINT=2;
+const GOAL_POINT=3;
+const SAND=4;
+const WATER=5;
+let score;
 
 function fetchLevelData(level, callback)
 {
@@ -111,6 +118,7 @@ class cubeSpace
 		{
 			this.getStartPos(true);
 		}
+		this.r=this.face * 90;
 	}
 	//calling stage rotation
 	rotate(direction)
@@ -135,7 +143,7 @@ class cubeSpace
 		for(let k=0; k<Math.ceil(this.column/2); k++)
 		{
 			let cell=this.cells[x][_y][z];
-			if(cell !== 0)
+			if(cell !== AIR)
 			{
 				res=cell;
 				break;
@@ -146,7 +154,7 @@ class cubeSpace
 		return res;
 	}
 
-	checkBallOverlapNext(ball, _face=null)
+	checkBallOverlap(ball, _face=null)
 	{
 		let epsilon = 0.0001;
 		let topLeft = {x : ball.x - ball.radius, y : ball.y - ball.radius - epsilon};
@@ -159,21 +167,19 @@ class cubeSpace
 
 		let s = ( brGrid[0]-tlGrid[0] )*2 + ( brGrid[1]-tlGrid[1] );
 
-		let isObstacle = (f) => f != 0 && f != 2 && f != 3;
-
-		let face = _face === null ? this.nextFace : _face;
+		let face = _face === null ? this.face : _face;
 		switch(s)
 		{
 			case 0:
 				let fe = this.extractFaceFeature(tlGrid[0], tlGrid[1], face);
-				return isObstacle(fe);
+				return [fe];
 			case 1:
 			case 2:
 				let fe1 = this.extractFaceFeature(tlGrid[0], tlGrid[1], face);
 				let fe2 = this.extractFaceFeature(brGrid[0], brGrid[1], face);
-				return isObstacle(fe1) || isObstacle(fe2);
+				return [fe1, fe2];
 			case 3:
-				let fes = [[0,0],[0,0]], res = false;
+				let fes = [[0,0],[0,0]], res = [];
 				fes[0][0] = this.extractFaceFeature(tlGrid[0], tlGrid[1], face);
 				fes[0][1] = this.extractFaceFeature(brGrid[0], tlGrid[1], face);
 				fes[1][0] = this.extractFaceFeature(tlGrid[0], brGrid[1], face);
@@ -189,12 +195,25 @@ class cubeSpace
 						let isCollide = collideSquereToCircle(llx + i*cw, lly + j*cw, cw, cw, ball.x, ball.y, ball.radius);
 						if(isCollide)
 						{
-							if(isObstacle(fes[j][i]) ) return true;
+							res.push(fes[j][i]);
 						}
 					}
 				}
-				return false;
+				return res;
 		}
+	}
+
+	checkBallOverlapNext(ball, _face=null)
+	{
+		let face = _face === null ? this.nextFace : _face;
+		let cond=(f) => f != AIR && f != START_POINT && f != GOAL_POINT;
+
+		let overlapData = this.checkBallOverlap(ball, face);
+		for(let i=0;i<overlapData.length; i++)
+		{
+			if(cond(overlapData[i])) return true;
+		}
+		return false;
 	}
 
 	//animation stage rotation
@@ -257,7 +276,7 @@ class cubeSpace
 	//start:2, end:3
 	isStartEndPoint(mode)
 	{
-		return mode == 2 || mode == 3;
+		return mode == START_POINT || mode == GOAL_POINT;
 	}
 	
 	getStartPos(initialize = false)
@@ -274,7 +293,7 @@ class cubeSpace
 				{
 					for(let j=0;j<this.column;j++)
 					{
-						if(this.bounding[i][j] == 2)
+						if(this.bounding[i][j] == START_POINT)
 						{
 							res={x:j, y:i};
 							this.startX = j;
@@ -324,7 +343,7 @@ class cubeSpace
 				for(let k=0; k<Math.ceil(this.column/2); k++)
 				{
 					let cell=(face % 2 == 0) ? this.cells[xx][j][zz] : this.cells[zz][j][xx];
-					if(cell !== 0)
+					if(cell !== AIR)
 					{
 						res[j][i]=cell;
 						break;
@@ -359,12 +378,17 @@ class cubeSpace
 				for(let z=0;z<this.column;z++)
 				{
 					let currentCell=this.cells[x][y][z];
-					if(currentCell == 0) continue;
+					if(currentCell == AIR) continue;
 					switch(currentCell)
 					{
-						case 1:fill(255); break;
-						case 2:fill(0,255,0); break;
-						case 3:fill(255,255,0); break;
+						case WALL:
+							if(y == this.row -1) fill(40,224,60);
+							else fill(255);
+							break;
+						case START_POINT:fill(0,255,0); break;
+						case GOAL_POINT:fill(255,255,0); break;
+						case SAND:fill("#a18d6c"); break;
+						case WATER:fill("#42a3ed"); break;
 					}
 					push();
 					translate(this.cellWidth * x - this.width / 2 + this.cellWidth/2, 
@@ -396,6 +420,9 @@ class ballPlayer
 
 		this.preMouse=new p5.Vector();
 		this.controlVector=new p5.Vector();
+		this.tempPos=[0,0];
+		this.isTrapped=false;
+		this.trappedFrame=-1;
 	}
 	
 	//gravity getter
@@ -436,7 +463,7 @@ class ballPlayer
 		let i;
 		for(i=gridY; i<map.row; i++)
 		{
-			if(map.bounding[i][gridX] == 1) return map.getCellBound(gridX, i, UP);
+			if(map.bounding[i][gridX] == WALL) return map.getCellBound(gridX, i, UP);
 		}
 		return map.lowerBound;
 	}
@@ -492,7 +519,7 @@ class ballPlayer
 		let touchedV=map.bounding[cur_grid_y[1]][cur_grid_x[0]];
 
 		
-		if(touchedX == 1)
+		if(touchedX == WALL)
 		{
 			if(gridDistX > 0)
 			{
@@ -507,7 +534,7 @@ class ballPlayer
 				collidedV = true;
 			}
 		}
-		if(touchedY == 1)
+		if(touchedY == WALL)
 		{
 			if(gridDistY > 0)
 			{
@@ -522,7 +549,7 @@ class ballPlayer
 				collidedH = true;
 			}
 		}
-		if(touchedX == 0 && touchedY == 0 && touchedV == 1)
+		if(touchedX == AIR && touchedY == AIR && touchedV == WALL)
 		{
 			this.dir.x *= -0.9;
 			this.dir.y *= -0.9;
@@ -563,6 +590,7 @@ class ballPlayer
 
 			if(this.isGoalReached(map)) return "goal";
 		}
+		return this.getCollision(map);
 	}
 
 	prepareLaunch(x, y)
@@ -591,6 +619,59 @@ class ballPlayer
 		}
 	}
 
+	//moving ball
+	move(isRotating, map)
+	{
+		if(this.isMoving)
+		{
+			if(!isRotating && this.applyGravity) this.dir.y += this.gravity;
+			let prePos=this.pos.copy();
+			let realDir=this.dir.copy();
+			if(isRotating) realDir.mult(0.1);
+			this.pos.add(realDir);
+			let status = this.checkBound(prePos, realDir, map);
+			switch(status)
+			{
+				case "missed":
+					this.isMoving=false;
+					this.applyGravity=false;
+					let gridPos = map.getGrid(this.x, this.y);
+					this.tempPos[0] = map.getCellBound(gridPos[0], gridPos[1], CENTERX);
+					this.tempPos[1] = map.getCellBound(gridPos[0], gridPos[1], DOWN) - this.radius - 3;
+					this.trappedFrame = 120;
+			}
+		}
+	}
+
+	initDrop()
+	{
+		this.isMoving=true;
+		this.applyGravity=true;
+	}
+	resurrection()
+	{
+		this.x=this.tempPos[0];
+		this.y=this.tempPos[1];
+	}
+
+	isGoalReached(map)
+	{
+		let res=false;
+		let gridPos = map.getGrid(this.x, this.y);
+		res = (map.bounding[gridPos[1]][gridPos[0]] == 3);
+		return res;
+	}
+	getCollision(map)
+	{
+		let collideData = map.checkBallOverlap(this);
+
+		for(let i=0;i<collideData.length;i++)
+		{
+			if(collideData[i] == SAND) return "missed";
+		}
+		return "idle";
+	}
+	
 	renderControlTrace()
 	{
 		let mag=this.controlVector.mag();
@@ -606,36 +687,33 @@ class ballPlayer
 			newY += this.gravity * 2;
 		}
 	}
-	
-	//moving ball
-	move(isRotating, map)
+
+	renderTrapped()
 	{
-		if(this.isMoving)
+		let alpha;
+		if(this.trappedFrame >= 60)
 		{
-			if(!isRotating && this.applyGravity) this.dir.y += this.gravity;
-			let prePos=this.pos.copy();
-			let realDir=this.dir.copy();
-			if(isRotating) realDir.mult(0.1);
-			this.pos.add(realDir);
-			this.checkBound(prePos, realDir, map);
+			alpha=(this.trappedFrame - 60) /60 * 255;
+			fill(255, alpha);
+//			tint(255, alpha);
+		}
+		else
+		{
+			alpha = (this.trappedFrame % 20 < 10) ? 255 : 0;
+			fill(255, alpha);
+//			tint(255, alpha);
+		}
+
+		if(this.trappedFrame == 60) this.resurrection();
+//		noTint();
+		this.trappedFrame--;
+		if(this.trappedFrame < 0)
+		{
+			this.trappedFrame = -1;
+			this.isTrapped = false;
 		}
 	}
 
-	initDrop()
-	{
-		this.isMoving=true;
-		this.applyGravity=true;
-	}
-
-	isGoalReached(map)
-	{
-		let res=false;
-		let gridPos = map.getGrid(this.x, this.y);
-		res = (map.bounding[gridPos[1]][gridPos[0]] == 3);
-		console.log(res);
-		return res;
-	}
-	
 	//rendering ball
 	render()
 	{
@@ -643,7 +721,8 @@ class ballPlayer
 		noStroke();
 		translate(0,0,980);
 		if(this.isLaunchStart) this.renderControlTrace();
-		fill("#ffffff");
+		if(this.trappedFrame) this.renderTrapped();
+		else fill("#ffffff");
 		circle(this.x, this.y, this.radius * 2);
 		pop();
 	}
@@ -683,7 +762,7 @@ function setup()
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
-	loadLevel(1);
+	loadLevel(6);
 //	fill(255);	
 }
 
@@ -716,7 +795,7 @@ function keyPressed() {
 
 function mousePressed()
 {
-	if(!ball.isLaunchStart && !ball.isMoving)
+	if(!ball.isLaunchStart && !ball.isMoving && !ball.isTrapped)
 	{
 		ball.prepareLaunch(mouseX, mouseY);
 	}
