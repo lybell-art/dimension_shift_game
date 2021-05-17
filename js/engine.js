@@ -10,7 +10,7 @@ const START_POINT=2;
 const GOAL_POINT=3;
 const SAND=4;
 const WATER=5;
-let score;
+let attempt=0, parScore;
 
 function fetchLevelData(level, callback)
 {
@@ -75,6 +75,7 @@ class cubeSpace
 		this.face = 0; // current facing(0~4)
 		this.startX = 0; // ball's start x position
 		this.startY = 0; // ball's start y position
+		this.startFace = 0;
 
 		this.r = 0; // rotation degree(for animation)
 		this.nextFace= 0; // next facing - for rotating stage
@@ -112,7 +113,8 @@ class cubeSpace
 		this.cells = json.cells;
 		this.startX = (typeof(json.startX) === "number") ? json.startX : -1;
 		this.startY = (typeof(json.startY) === "number") ? json.startY : -1;
-		this.face = (typeof(json.startY) === "number") ? json.facing : 0;
+		this.startFace = (typeof(json.startY) === "number") ? json.facing : 0;
+		this.face = this.startFace;
 		this.bounding = this.getBound(this.face);
 		if(this.startX == -1 || this.startY == -1)
 		{
@@ -126,6 +128,12 @@ class cubeSpace
 		if(!this.canRotate) return;
 		this.rotateDir=direction;
 		this.nextFace=cycle(this.nextFace, direction, 4);
+	}
+
+	resetFacing()
+	{
+		this.face = this.startFace;
+		this.r=this.face * 90;
 	}
 
 	extractFaceFeature(_x, _y, face)
@@ -452,6 +460,9 @@ class ballPlayer
 	{
 		this.x=map.getCellBound(map.startX, map.startY, CENTERX);
 		this.y=map.getCellBound(map.startX, map.startY, DOWN) - this.radius;
+		this.dir.mult(0);
+		this.isMoving=false;
+		this.applyGravity=true;
 	}
 	
 	//nearest ground checking
@@ -558,8 +569,8 @@ class ballPlayer
 		let ground = this.checkNearestGround(map);
 		if(collidedH)
 		{
-			this.dir.y *= 0.9;
-			this.dir.x *= 0.96;
+			this.dir.y *= 0.85;
+			this.dir.x *= 0.95;
 			
 			//임계점 이하일 때 중력 적용 안 함
 			if (Math.abs(this.pos.y - ground) <= this.gravityMag*5 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*5){
@@ -573,8 +584,8 @@ class ballPlayer
 		}
 		if(collidedV)
 		{
-			this.dir.x *=0.9;
-			this.dir.y *= 0.96;
+			this.dir.x *=0.85;
+			this.dir.y *= 0.95;
 		}
 		
 		//중력 적용 안 할 때-x축 방향으로만 움직임
@@ -590,6 +601,17 @@ class ballPlayer
 
 			if(this.isGoalReached(map)) return "goal";
 		}
+		//수중 항력 계산
+		if(this.isInWater(map))
+		{
+			let density=0.1;
+			let dirMag=this.dir.magSq();
+			dirMag *= -0.5 * density;
+			let dragga = this.dir.copy();
+			dragga.setMag(dirMag);
+			this.dir.add(dragga);
+		}
+
 		return this.getCollision(map);
 	}
 
@@ -616,6 +638,7 @@ class ballPlayer
 			this.dir.set(this.controlVector);
 			this.isMoving=true;
 			this.applyGravity=true;
+			attempt ++;
 		}
 	}
 
@@ -624,7 +647,11 @@ class ballPlayer
 	{
 		if(this.isMoving)
 		{
-			if(!isRotating && this.applyGravity) this.dir.y += this.gravity;
+			if(!isRotating && this.applyGravity)
+			{
+				if(this.isInWater(map)) this.dir.y += 0.5 * this.gravity;
+				else this.dir.y += this.gravity;
+			}
 			let prePos=this.pos.copy();
 			let realDir=this.dir.copy();
 			if(isRotating) realDir.mult(0.1);
@@ -639,6 +666,14 @@ class ballPlayer
 					this.tempPos[0] = map.getCellBound(gridPos[0], gridPos[1], CENTERX);
 					this.tempPos[1] = map.getCellBound(gridPos[0], gridPos[1], DOWN) - this.radius - 3;
 					this.trappedFrame = 120;
+					this.isTrapped=true;
+					attempt ++;
+					break;
+				case "goal":
+					this.isMoving=false;
+					this.applyGravity=false;
+//					(scene change)
+					break;
 			}
 		}
 	}
@@ -654,12 +689,20 @@ class ballPlayer
 		this.y=this.tempPos[1];
 	}
 
-	isGoalReached(map)
+	checkBasicCollision(map, n)
 	{
 		let res=false;
 		let gridPos = map.getGrid(this.x, this.y);
-		res = (map.bounding[gridPos[1]][gridPos[0]] == 3);
+		res = (map.bounding[gridPos[1]][gridPos[0]] == n);
 		return res;
+	}
+	isGoalReached(map)
+	{
+		return this.checkBasicCollision(map, GOAL_POINT);
+	}
+	isInWater(map)
+	{
+		return this.checkBasicCollision(map, WATER);
 	}
 	getCollision(map)
 	{
@@ -721,7 +764,7 @@ class ballPlayer
 		noStroke();
 		translate(0,0,980);
 		if(this.isLaunchStart) this.renderControlTrace();
-		if(this.trappedFrame) this.renderTrapped();
+		if(this.isTrapped) this.renderTrapped();
 		else fill("#ffffff");
 		circle(this.x, this.y, this.radius * 2);
 		pop();
@@ -746,7 +789,25 @@ function loadLevel(level)
 	fetchLevelData(level, function(json){
 		world.loadLevel(json);
 		ball.initialize(world);
-		isLoaded=true;});
+		isLoaded=true;
+		attempt=0; parScore=json.par;});
+}
+
+function restartLevel()
+{
+	world.resetFacing();
+	ball.initialize(world);
+	attempt=0;;
+}
+
+function getScore()
+{
+	return attempt - parScore;
+}
+
+function isGameover()
+{
+	return attempt > parScore * 3;
 }
 
 function preload()
@@ -762,8 +823,8 @@ function setup()
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
-	loadLevel(6);
-//	fill(255);	
+	loadLevel(9);
+//	fill(255);
 }
 
 function draw()
@@ -784,10 +845,16 @@ function ingame()
 }
 
 function keyPressed() {
-	if (keyCode === LEFT_ARROW) {
-		world.rotate(1);
-	} else if (keyCode === RIGHT_ARROW) {
-		world.rotate(-1);
+	if(!ball.isTrapped)
+	{
+		if (keyCode === LEFT_ARROW || keyCode === 65) { //A
+			world.rotate(1);
+		} else if (keyCode === RIGHT_ARROW || keyCode === 68) { //D
+			world.rotate(-1);
+		}
+		else if(keyCode == 82){ //R
+			restartLevel();
+		}
 	}
 }
 
