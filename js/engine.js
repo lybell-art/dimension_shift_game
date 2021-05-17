@@ -75,6 +75,7 @@ class cubeSpace
 		this.face = 0; // current facing(0~4)
 		this.startX = 0; // ball's start x position
 		this.startY = 0; // ball's start y position
+		this.startFace = 0;
 
 		this.r = 0; // rotation degree(for animation)
 		this.nextFace= 0; // next facing - for rotating stage
@@ -112,7 +113,8 @@ class cubeSpace
 		this.cells = json.cells;
 		this.startX = (typeof(json.startX) === "number") ? json.startX : -1;
 		this.startY = (typeof(json.startY) === "number") ? json.startY : -1;
-		this.face = (typeof(json.startY) === "number") ? json.facing : 0;
+		this.startFace = (typeof(json.startY) === "number") ? json.facing : 0;
+		this.face = this.startFace;
 		this.bounding = this.getBound(this.face);
 		if(this.startX == -1 || this.startY == -1)
 		{
@@ -126,6 +128,12 @@ class cubeSpace
 		if(!this.canRotate) return;
 		this.rotateDir=direction;
 		this.nextFace=cycle(this.nextFace, direction, 4);
+	}
+
+	resetFacing()
+	{
+		this.face = this.startFace;
+		this.r=this.face * 90;
 	}
 
 	extractFaceFeature(_x, _y, face)
@@ -452,6 +460,9 @@ class ballPlayer
 	{
 		this.x=map.getCellBound(map.startX, map.startY, CENTERX);
 		this.y=map.getCellBound(map.startX, map.startY, DOWN) - this.radius;
+		this.dir.mult(0);
+		this.isMoving=false;
+		this.applyGravity=true;
 	}
 	
 	//nearest ground checking
@@ -590,6 +601,17 @@ class ballPlayer
 
 			if(this.isGoalReached(map)) return "goal";
 		}
+		//수중 항력 계산
+		if(this.isInWater(map))
+		{
+			let density=0.1;
+			let dirMag=this.dir.magSq();
+			dirMag *= -0.5 * density;
+			let dragga = this.dir.copy();
+			dragga.setMag(dirMag);
+			this.dir.add(dragga);
+		}
+
 		return this.getCollision(map);
 	}
 
@@ -625,11 +647,14 @@ class ballPlayer
 	{
 		if(this.isMoving)
 		{
-			if(!isRotating && this.applyGravity) this.dir.y += this.gravity;
+			if(!isRotating && this.applyGravity)
+			{
+				if(this.isInWater(map)) this.dir.y += 0.5 * this.gravity;
+				else this.dir.y += this.gravity;
+			}
 			let prePos=this.pos.copy();
 			let realDir=this.dir.copy();
 			if(isRotating) realDir.mult(0.1);
-			if(this.isInWater(map)) realDir.mult(0.4);
 			this.pos.add(realDir);
 			let status = this.checkBound(prePos, realDir, map);
 			switch(status)
@@ -641,6 +666,7 @@ class ballPlayer
 					this.tempPos[0] = map.getCellBound(gridPos[0], gridPos[1], CENTERX);
 					this.tempPos[1] = map.getCellBound(gridPos[0], gridPos[1], DOWN) - this.radius - 3;
 					this.trappedFrame = 120;
+					this.isTrapped=true;
 					attempt ++;
 					break;
 				case "goal":
@@ -767,6 +793,13 @@ function loadLevel(level)
 		attempt=0; parScore=json.par;});
 }
 
+function restartLevel()
+{
+	world.resetFacing();
+	ball.initialize(world);
+	attempt=0;;
+}
+
 function preload()
 {
 	myShader = loadShader("shader/shader.vert", "shader/shader.frag");
@@ -780,7 +813,7 @@ function setup()
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
-	loadLevel(8);
+	loadLevel(9);
 //	fill(255);
 }
 
@@ -808,6 +841,9 @@ function keyPressed() {
 			world.rotate(1);
 		} else if (keyCode === RIGHT_ARROW) {
 			world.rotate(-1);
+		}
+		else if(keyCode == 82){
+			restartLevel();
 		}
 	}
 }
