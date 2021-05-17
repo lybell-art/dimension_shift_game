@@ -14,7 +14,7 @@ function intro(){
 }
 
 function drawIngameUI(){
-    let s = 'Current Score: ' + score;
+    let s = 'Current Score: ' + (parScore-attempt);
     ingameUI.clear();
     ingameUI.image(logo, windowWidth/2 - logo.width/3, 100, logo.width/1.5, logo.height/1.5);
 
