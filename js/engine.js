@@ -800,6 +800,16 @@ function restartLevel()
 	attempt=0;;
 }
 
+function getScore()
+{
+	return attempt - parScore;
+}
+
+function isGameover()
+{
+	return attempt > parScore * 3;
+}
+
 function preload()
 {
 	myShader = loadShader("shader/shader.vert", "shader/shader.frag");
