@@ -6,7 +6,7 @@ let myShader;
 let font;
 let logo, btnTexture, btnPressedTexture, 
 	golfBg, rbtnTexture, rbtnPressedTexture, rbtnlockedTexture,
-	typoCong, typoOver, golfballTexture, woodboxTexture, woodboxDarkTexture,
+	typoCong, typoOver, golfballTexture, woodboxTexture, grassTexture,
 	cartoonwaterTexture;
 
 const UP="up";
@@ -408,8 +408,8 @@ class cubeSpace
 					switch(currentCell)
 					{
 						case WALL:
-							if(y == this.row -1) texture(woodboxTexture);
-							else texture(woodboxDarkTexture);
+							if(y == this.row -1) texture(grassTexture);
+							else texture(woodboxTexture);
 							break;
 						case START_POINT:fill(0,255,0); break;
 						case GOAL_POINT:fill(255,255,0); break;
@@ -656,8 +656,11 @@ class ballPlayer
 			this.dir.set(this.controlVector);
 			this.isMoving=true;
 			this.applyGravity=true;
+			swingSound.play();
 			attempt ++;
+			return true;
 		}
+		return false;
 	}
 
 	//moving ball
@@ -853,8 +856,8 @@ function preload()
 
 	golfballTexture = loadImage("essets/images/golfball.jpg");
 	woodboxTexture = loadImage("essets/images/woodbox.png");
-	woodboxDarkTexture = loadImage("essets/images/woodbox_dark.png");
-	cartoonwaterTexture = loadImage("essets/images/cartoonwater.jpg")
+	grassTexture = loadImage("essets/images/grass_texture.png");
+	cartoonwaterTexture = loadImage("essets/images/cartoonwater.jpg");
 
 	btnTexture = loadImage("essets/images/button.png");
 	btnPressedTexture = loadImage("essets/images/button_pressed.png");
@@ -963,7 +966,6 @@ function mouseReleased()
 	if(ball.isLaunchStart && scene == GAMEPLAY)
 	{
 		ball.launch();
-		swingSound.play();
 	}
 }
 
