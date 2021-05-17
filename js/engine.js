@@ -26,6 +26,32 @@ function flip(x, axis)
 	let dist=x-axis;
 	return axis - dist;
 }
+function between(a, min, max)
+{
+	return min <= a && a<=max;
+}
+function collideSquereToCircle(sx, sy, sw, sh, cx, cy, cr)
+{
+	let ex = sx + sw;
+	let ey = sy + sh;
+	let h = between(cx, sx, ex);
+	let v = between(cy, sy, ey);
+	if(h && v) return true;
+	else if(h || v)
+	{
+		let h2= between(cx, sx-cr, ex+cr);
+		let v2 = between(cy, sy-cr, ey+cr);
+		return h2 || v2;
+	}
+	else
+	{
+		let dx = Math.sign(cx - (sx + sw / 2));
+		let dy = Math.sign(cy - (sy + sh / 2));
+		let ppx= dx == -1 ? sx : ex;
+		let ppy= dy == -1 ? sy : ey;
+		return (cx - ppx) * (cx - ppx) + (cy - ppy) * (cy - ppy) < cr*cr;
+	}
+}
 
 //맵 클래스
 class cubeSpace
@@ -46,6 +72,7 @@ class cubeSpace
 		this.r = 0; // rotation degree(for animation)
 		this.nextFace= 0; // next facing - for rotating stage
 		this.rotateDir=0; // rotation direction
+		this.canRotate=true;
 	}
 	//stage's width
 	get width(){
@@ -88,20 +115,111 @@ class cubeSpace
 	//calling stage rotation
 	rotate(direction)
 	{
+		if(!this.canRotate) return;
 		this.rotateDir=direction;
 		this.nextFace=cycle(this.nextFace, direction, 4);
 	}
+
+	extractFaceFeature(_x, _y, face)
+	{
+		let x, z, depthDir;
+		switch(face)
+		{
+			case 0:x=_x; z=this.column-1; depthDir=-1; break;
+			case 1:x=0; z=_x; depthDir=1; break;
+			case 2:x=this.column-1-_x; z=0; depthDir=1; break;
+			case 3:x=this.column-1; z=this.column-1-x; depthDir=-1; break;
+		}
+
+		let res=0;
+		for(let k=0; k<Math.ceil(this.column/2); k++)
+		{
+			let cell=this.cells[x][_y][z];
+			if(cell !== 0)
+			{
+				res=cell;
+				break;
+			}
+			if(face % 2 == 0) z += depthDir;
+			else x +=depthDir;
+		}
+		return res;
+	}
+
+	checkBallOverlapNext(ball, _face=null)
+	{
+		let epsilon = 0.0001;
+		let topLeft = {x : ball.x - ball.radius, y : ball.y - ball.radius - epsilon};
+		let topRight = {x : ball.x - ball.radius, y : ball.y + ball.radius - epsilon};
+		let bottomLeft = {x : ball.x + ball.radius, y : ball.y - ball.radius - epsilon};
+		let bottomRight = {x : ball.x + ball.radius, y : ball.y + ball.radius - epsilon};
+
+		let tlGrid = this.getGrid(topLeft.x, topLeft.y);
+		let brGrid = this.getGrid(bottomRight.x, bottomRight.y);
+
+		let s = ( brGrid[0]-tlGrid[0] )*2 + ( brGrid[1]-tlGrid[1] );
+
+		let isObstacle = (f) => f != 0 && f != 2 && f != 3;
+
+		let face = _face === null ? this.nextFace : _face;
+		switch(s)
+		{
+			case 0:
+				let fe = this.extractFaceFeature(tlGrid[0], tlGrid[1], face);
+				return isObstacle(fe);
+			case 1:
+			case 2:
+				let fe1 = this.extractFaceFeature(tlGrid[0], tlGrid[1], face);
+				let fe2 = this.extractFaceFeature(brGrid[0], brGrid[1], face);
+				return isObstacle(fe1) || isObstacle(fe2);
+			case 3:
+				let fes = [[0,0],[0,0]], res = false;
+				fes[0][0] = this.extractFaceFeature(tlGrid[0], tlGrid[1], face);
+				fes[0][1] = this.extractFaceFeature(brGrid[0], tlGrid[1], face);
+				fes[1][0] = this.extractFaceFeature(tlGrid[0], brGrid[1], face);
+				fes[1][1] = this.extractFaceFeature(brGrid[0], brGrid[1], face);
+
+				let llx = this.getCellBound(tlGrid[0], tlGrid[1], LEFT);
+				let lly = this.getCellBound(tlGrid[0], tlGrid[1], UP);
+				let cw = this.cellWidth;
+				for(let i=0;i<2;i++)
+				{
+					for(let j=0;j<2;j++)
+					{
+						let isCollide = collideSquereToCircle(llx + i*cw, lly + j*cw, cw, cw, ball.x, ball.y, ball.radius);
+						if(isCollide)
+						{
+							if(isObstacle(fes[j][i]) ) return true;
+						}
+					}
+				}
+				return false;
+		}
+	}
+
 	//animation stage rotation
-	operate()
+	operate(ball)
 	{
 		if(this.rotateDir != 0)
 		{
 			this.r = cycle(this.r, this.rotateDir * 5, 360);
 			if(this.r ==this.nextFace * 90) //if rotating animation is ended
 			{
-				this.rotateDir = 0;
-				this.face = this.nextFace;
-				this.bounding=this.getBound();
+				let res = this.checkBallOverlapNext(ball);
+				if(res && this.canRotate)
+				{
+					this.rotateDir *= -1;
+					this.nextFace = this.face;
+					this.canRotate = false;
+				}
+				else
+				{
+					this.rotateDir = 0;
+					this.face = this.nextFace;
+					this.bounding=this.getBound();
+					this.canRotate=true;
+					ball.initDrop();
+				}
 			}
 			return true;
 		}
@@ -173,7 +291,6 @@ class cubeSpace
 		else{
 			res={x:this.startX, y:this.startY};
 		}
-		console.log(res);
 		return res;
 	}
 
@@ -498,6 +615,12 @@ class ballPlayer
 			this.checkBound(prePos, realDir, map);
 		}
 	}
+
+	initDrop()
+	{
+		this.isMoving=true;
+		this.applyGravity=true;
+	}
 	
 	//rendering ball
 	render()
@@ -518,7 +641,8 @@ function drawOverlay()
 	push();
 	translate(0,0,970);
 	noStroke();
-	fill(0,0,0,70);
+	if(world.canRotate) fill(0,0,0,70);
+	else fill(255,0,0,70);
 	plane(width, height);
 	pop();
 }
@@ -558,7 +682,7 @@ function draw()
 function ingame()
 {
 	let isRotating=false;
-	isRotating = world.operate();
+	isRotating = world.operate(ball);
 	if(ball.isLaunchStart && mouseIsPressed) ball.control(mouseX, mouseY);
 	ball.move(isRotating, world);
 	world.render();
