@@ -847,12 +847,12 @@ function ingame()
 function keyPressed() {
 	if(!ball.isTrapped)
 	{
-		if (keyCode === LEFT_ARROW) {
+		if (keyCode === LEFT_ARROW || keyCode === 65) { //A
 			world.rotate(1);
-		} else if (keyCode === RIGHT_ARROW) {
+		} else if (keyCode === RIGHT_ARROW || keyCode === 68) { //D
 			world.rotate(-1);
 		}
-		else if(keyCode == 82){
+		else if(keyCode == 82){ //R
 			restartLevel();
 		}
 	}
