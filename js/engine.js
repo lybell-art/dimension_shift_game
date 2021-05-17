@@ -128,7 +128,7 @@ class cubeSpace
 			case 0:x=_x; z=this.column-1; depthDir=-1; break;
 			case 1:x=0; z=_x; depthDir=1; break;
 			case 2:x=this.column-1-_x; z=0; depthDir=1; break;
-			case 3:x=this.column-1; z=this.column-1-x; depthDir=-1; break;
+			case 3:x=this.column-1; z=this.column-1-_x; depthDir=-1; break;
 		}
 
 		let res=0;
@@ -528,13 +528,13 @@ class ballPlayer
 			this.dir.y *= -0.9;
 		}
 		
+		let ground = this.checkNearestGround(map);
 		if(collidedH)
 		{
 			this.dir.y *= 0.9;
 			this.dir.x *= 0.96;
 			
 			//임계점 이하일 때 중력 적용 안 함
-			let ground = this.checkNearestGround(map);
 			if (Math.abs(this.pos.y - ground) <= this.gravityMag*5 + this.radius && Math.abs(this.dir.y) <= this.gravityMag*5){
 				this.applyGravity = false;
 				this.dir.y = 0;
@@ -557,6 +557,7 @@ class ballPlayer
 				this.dir.x = 0;
 				this.isMoving = false;
 			}
+			if((ground - this.radius) - this.y > 0) this.applyGravity=true;
 		}
 	}
 
@@ -676,6 +677,7 @@ function setup()
 function draw()
 {
 	background("#75d4ff");
+	orbitControl();
 	if(isLoaded) ingame();
 }
 
