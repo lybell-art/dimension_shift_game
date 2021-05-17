@@ -4,11 +4,6 @@ function setupIntro(){
     button = new Clickable()
     button.locate(20, 20);        //Position Button
     button.textFont = font;
-    button.onPress = function(){  //When myButton is pressed
-      this.color = "#AAAAFF";       //Change button color
-      alert("Yay!");
-      scene = 1;                //Show an alert message
-    }
     button.onHover = function(){
         console.log("hover")
     }
@@ -27,5 +22,7 @@ function drawIngameUI(){
     ingameUI.textSize(17)
     ingameUI.textAlign(CENTER, CENTER);
     ingameUI.text(s, windowWidth/2, 100 + logo.height/1.5 + 20);
+
+    button.draw(ingameUI)
     // ingameUI.background(random(255));
 }

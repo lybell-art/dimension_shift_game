@@ -18,7 +18,6 @@ const START_POINT=2;
 const GOAL_POINT=3;
 const SAND=4;
 const WATER=5;
-let score;
 
 var scene = 1;
 
