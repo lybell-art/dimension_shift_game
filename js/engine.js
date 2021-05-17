@@ -5,7 +5,9 @@ let myShader;
 
 let font;
 let logo, btnTexture, btnPressedTexture, 
-	golfBg, rbtnTexture, rbtnPressedTexture, rbtnlockedTexture;
+	golfBg, rbtnTexture, rbtnPressedTexture, rbtnlockedTexture,
+	typoCong, typoOver, golfballTexture, woodboxTexture, woodboxDarkTexture,
+	cartoonwaterTexture;
 
 const UP="up";
 const DOWN="down";
@@ -24,7 +26,9 @@ const SELECT_MAP=2;
 const GAME_OVER=3;
 
 let scene = 0;
+let level, unlock;
 let attempt=0, parScore;
+let buttonClickSound, swingSound, tadaSound, failSound;
 
 function fetchLevelData(level, callback)
 {
@@ -404,13 +408,13 @@ class cubeSpace
 					switch(currentCell)
 					{
 						case WALL:
-							if(y == this.row -1) fill(40,224,60);
-							else fill(255);
+							if(y == this.row -1) texture(woodboxTexture);
+							else texture(woodboxDarkTexture);
 							break;
 						case START_POINT:fill(0,255,0); break;
 						case GOAL_POINT:fill(255,255,0); break;
 						case SAND:fill("#a18d6c"); break;
-						case WATER:fill("#42a3ed"); break;
+						case WATER:texture(cartoonwaterTexture); break;
 					}
 					push();
 					translate(this.cellWidth * x - this.width / 2 + this.cellWidth/2, 
@@ -683,18 +687,27 @@ class ballPlayer
 					this.isTrapped=true;
 					attempt ++;
 
-					if(isGameover()){
-						scene = GAME_OVER;
-					}
-
 					break;
 				case "goal":
 					this.isMoving=false;
 					this.applyGravity=false;
 
 					scene = GAME_OVER;
+					tadaSound.play();
+					unlock = 0;
+					console.log(mapButtons)
+					if(level < 10){
+						if(mapButtons[level].locked){
+							unlock = 1;
+							mapButtons[level].unlock();
+						}
+					}
 					break;
 			}
+		}
+		if(isGameover()){
+			scene = GAME_OVER;
+			failSound.play();
 		}
 	}
 
@@ -838,11 +851,24 @@ function preload()
 
 	logo = loadImage("essets/images/logo.png");
 
+	golfballTexture = loadImage("essets/images/golfball.jpg");
+	woodboxTexture = loadImage("essets/images/woodbox.png");
+	woodboxDarkTexture = loadImage("essets/images/woodbox_dark.png");
+	cartoonwaterTexture = loadImage("essets/images/cartoonwater.jpg")
+
 	btnTexture = loadImage("essets/images/button.png");
 	btnPressedTexture = loadImage("essets/images/button_pressed.png");
 	rbtnTexture = loadImage("essets/images/round_button.png");
 	rbtnPressedTexture = loadImage("essets/images/round_button_pressed.png");
 	rbtnlockedTexture = loadImage("essets/images/round_button_locked.png");
+
+	typoCong = loadImage("essets/images/typo_cong.png");
+	typoOver = loadImage("essets/images/typo_over.png");
+
+	buttonClickSound = loadSound("essets/sounds/button_click.wav");
+	swingSound = loadSound("essets/sounds/swing.wav");
+	tadaSound = loadSound("essets/sounds/tada.wav");
+	failSound = loadSound("essets/sounds/fail.wav");
 
 	golfBg = loadImage("essets/images/golf_bg.jpg")
 }
@@ -856,8 +882,10 @@ function setup()
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
+
 	setupIntro();
 	setupGameOver();
+	setupMapSelection();
 }
 
 function draw()
@@ -874,7 +902,7 @@ function draw()
 				drawIngameUI();
 				overlayGUI();
 			}
-			else loadLevel(1);
+			else loadLevel(level);
 			break;
 		case GAME_OVER:
 			drawGameOver();
@@ -909,7 +937,7 @@ function ingame()
 }
 
 function keyPressed() {
-	if(!ball.isTrapped && scene = GAMEPLAY)
+	if(!ball.isTrapped && scene == GAMEPLAY)
 	{
 		if (keyCode === LEFT_ARROW || keyCode === 65) { //A
 			world.rotate(1);
@@ -922,11 +950,9 @@ function keyPressed() {
 	}
 }
 
-
-
 function mousePressed()
 {
-	if(!ball.isLaunchStart && !ball.isMoving && !ball.isTrapped)
+	if(!ball.isLaunchStart && !ball.isMoving && !ball.isTrapped && scene == GAMEPLAY)
 	{
 		ball.prepareLaunch(mouseX, mouseY);
 	}
@@ -934,9 +960,10 @@ function mousePressed()
 
 function mouseReleased()
 {
-	if(ball.isLaunchStart)
+	if(ball.isLaunchStart && scene == GAMEPLAY)
 	{
 		ball.launch();
+		swingSound.play();
 	}
 }
 
