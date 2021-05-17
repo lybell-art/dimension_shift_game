@@ -4,9 +4,8 @@ let world, ball, isLoaded=false;
 let myShader;
 
 let font;
-let logo;
-
-let score;
+let logo, btnTexture, btnPressedTexture, 
+	golfBg, rbtnTexture, rbtnPressedTexture, rbtnlockedTexture;
 
 const UP="up";
 const DOWN="down";
@@ -19,7 +18,12 @@ const GOAL_POINT=3;
 const SAND=4;
 const WATER=5;
 
-let scene = 1;
+const INTRO=0;
+const GAMEPLAY=1;
+const SELECT_MAP=2;
+const GAME_OVER=3;
+
+let scene = 0;
 let attempt=0, parScore;
 
 function fetchLevelData(level, callback)
@@ -678,11 +682,17 @@ class ballPlayer
 					this.trappedFrame = 120;
 					this.isTrapped=true;
 					attempt ++;
+
+					if(isGameover()){
+						scene = GAME_OVER;
+					}
+
 					break;
 				case "goal":
 					this.isMoving=false;
 					this.applyGravity=false;
-//					(scene change)
+
+					scene = GAME_OVER;
 					break;
 			}
 		}
@@ -823,8 +833,18 @@ function isGameover()
 function preload()
 {
 	myShader = loadShader("shader/shader.vert", "shader/shader.frag");
+
 	font = loadFont("essets/fonts/Pacifico-Regular.ttf");
+
 	logo = loadImage("essets/images/logo.png");
+
+	btnTexture = loadImage("essets/images/button.png");
+	btnPressedTexture = loadImage("essets/images/button_pressed.png");
+	rbtnTexture = loadImage("essets/images/round_button.png");
+	rbtnPressedTexture = loadImage("essets/images/round_button_pressed.png");
+	rbtnlockedTexture = loadImage("essets/images/round_button_locked.png");
+
+	golfBg = loadImage("essets/images/golf_bg.jpg")
 }
 
 function setup()
@@ -836,35 +856,45 @@ function setup()
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
-	setupIntro()
-	// loadLevel(1);
-//	fill(255);	
+	setupIntro();
+	setupGameOver();
 }
 
 function draw()
 {
 	switch(scene){
-		case 0:
-			intro();
-			image(ingameUI, 0, 0);
+		case INTRO:
+			drawIntro();
+			overlayGUI();
 			break;
-		case 1:
+		case GAMEPLAY:
 			background("#75d4ff");
 			if(isLoaded) {
 				ingame();
-
-				push();
 				drawIngameUI();
-				texture(ingameUI);
-				noStroke();
-				translate(0, 0, 1000);
-				plane(windowWidth, windowHeight);
-				pop();
+				overlayGUI();
 			}
 			else loadLevel(1);
 			break;
+		case GAME_OVER:
+			drawGameOver();
+			overlayGUI();
+			break;
+		case SELECT_MAP:
+			drawMapSelection();
+			overlayGUI();
+			break;
 	}
 	
+}
+
+function overlayGUI(){
+	push();
+	texture(ingameUI);
+	noStroke();
+	translate(0, 0, 1000);
+	plane(windowWidth, windowHeight);
+	pop();
 }
 
 function ingame()
@@ -879,7 +909,7 @@ function ingame()
 }
 
 function keyPressed() {
-	if(!ball.isTrapped)
+	if(!ball.isTrapped && scene = GAMEPLAY)
 	{
 		if (keyCode === LEFT_ARROW || keyCode === 65) { //A
 			world.rotate(1);
@@ -907,7 +937,6 @@ function mouseReleased()
 	if(ball.isLaunchStart)
 	{
 		ball.launch();
-		score -= 1;
 	}
 }
 
