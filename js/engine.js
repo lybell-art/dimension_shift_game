@@ -440,7 +440,7 @@ class ballPlayer
 		}
 		return map.lowerBound;
 	}
-	
+
 	//bound check&reflection
 	checkBound(prepos, predir, map)
 	{
@@ -541,6 +541,8 @@ class ballPlayer
 				this.pos.y = ground - this.radius;
 			}
 			else this.applyGravity = true;
+
+			if(this.isGoalReached(map)) return "goal";
 		}
 		if(collidedV)
 		{
@@ -558,6 +560,8 @@ class ballPlayer
 				this.isMoving = false;
 			}
 			if((ground - this.radius) - this.y > 0) this.applyGravity=true;
+
+			if(this.isGoalReached(map)) return "goal";
 		}
 	}
 
@@ -622,6 +626,15 @@ class ballPlayer
 		this.isMoving=true;
 		this.applyGravity=true;
 	}
+
+	isGoalReached(map)
+	{
+		let res=false;
+		let gridPos = map.getGrid(this.x, this.y);
+		res = (map.bounding[gridPos[1]][gridPos[0]] == 3);
+		console.log(res);
+		return res;
+	}
 	
 	//rendering ball
 	render()
@@ -677,7 +690,6 @@ function setup()
 function draw()
 {
 	background("#75d4ff");
-	orbitControl();
 	if(isLoaded) ingame();
 }
 
