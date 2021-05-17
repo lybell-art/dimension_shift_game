@@ -1,9 +1,19 @@
+let mainMenu, ingameUI;
+
 let world, ball, isLoaded=false;
 let myShader;
+
+let font;
+let logo;
+
+let score;
+
 const UP="up";
 const DOWN="down";
 const CENTERX="centerX";
 const CENTERY="centerY";
+
+var scene = 1;
 
 function fetchLevelData(level, callback)
 {
@@ -668,29 +678,54 @@ function loadLevel(level)
 		world.loadLevel(json);
 		ball.initialize(world);
 		isLoaded=true;});
+	score = 5;
 }
 
 function preload()
 {
 	myShader = loadShader("shader/shader.vert", "shader/shader.frag");
+	font = loadFont("essets/fonts/Pacifico-Regular.ttf");
+	logo = loadImage("essets/images/logo.png");
 }
 
 function setup()
 {
 	frameRate(60);
-	createCanvas(windowWidth,windowHeight,WEBGL);
+	createCanvas(windowWidth,windowHeight, WEBGL);
+	ingameUI = createGraphics(windowWidth, windowHeight);
 	ortho(-width/2, width/2, -height/2, height/2, -2000, 2000);
 	world=new cubeSpace();
 	ball=new ballPlayer();
 	strokeWeight(3);
-	loadLevel(1);
+	setupIntro()
+	// loadLevel(1);
 //	fill(255);	
 }
 
 function draw()
 {
-	background("#75d4ff");
-	if(isLoaded) ingame();
+	switch(scene){
+		case 0:
+			intro();
+			image(ingameUI, 0, 0);
+			break;
+		case 1:
+			background("#75d4ff");
+			if(isLoaded) {
+				ingame();
+
+				push();
+				drawIngameUI();
+				texture(ingameUI);
+				noStroke();
+				translate(0, 0, 1000);
+				plane(windowWidth, windowHeight);
+				pop();
+			}
+			else loadLevel(1);
+			break;
+	}
+	
 }
 
 function ingame()
@@ -727,6 +762,7 @@ function mouseReleased()
 	if(ball.isLaunchStart)
 	{
 		ball.launch();
+		score -= 1;
 	}
 }
 
