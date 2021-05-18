@@ -407,14 +407,22 @@ class cubeSpace
 					if(currentCell == AIR) continue;
 					switch(currentCell)
 					{
-						case WALL:
+/*						case WALL:
 							if(y == this.row -1) texture(grassTexture);
 							else texture(woodboxTexture);
 							break;
 						case START_POINT:fill(0,255,0); break;
 						case GOAL_POINT:fill(255,255,0); break;
 						case SAND:fill("#a18d6c"); break;
-						case WATER:texture(cartoonwaterTexture); break;
+						case WATER:texture(cartoonwaterTexture); break;*/
+						case WALL:
+							if(y == this.row -1) fill(255,0,255,0);
+							else fill(0,255,255,0);
+							break;
+						case START_POINT:fill(0,255,0); break;
+						case GOAL_POINT:fill(255,255,0); break;
+						case SAND:fill("#a18d6c"); break;
+						case WATER:fill(0,0,255,0); break;
 					}
 					push();
 					translate(this.cellWidth * x - this.width / 2 + this.cellWidth/2, 
@@ -928,8 +936,17 @@ function overlayGUI(){
 	pop();
 }
 
+function shaderUniforms()
+{
+	myShader.setUniform("tGrassTexture", grassTexture);
+	myShader.setUniform("tBoxTexture", woodboxTexture);
+	myShader.setUniform("tWaterTexture", cartoonwaterTexture);
+}
+
 function ingame()
 {
+	orbitControl();
+	shaderUniforms();
 	let isRotating=false;
 	isRotating = world.operate(ball);
 	if(ball.isLaunchStart && mouseIsPressed) ball.control(mouseX, mouseY);
