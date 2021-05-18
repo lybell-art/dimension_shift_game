@@ -29,7 +29,6 @@ let scene = 0;
 let level, unlock;
 let attempt=0, parScore;
 let buttonClickSound, swingSound, tadaSound, failSound;
-let isCustomLevel = false;
 
 function fetchLevelData(level, callback)
 {

@@ -58,10 +58,10 @@ function setupGameOver(){
         restartLevel();
         scene = GAMEPLAY;
     }
-    if(level >= 1)
-    {
-        nextMap = new WoodenSquareButton("Next Map", windowWidth/2 - btnTexture.width/2, 700);
-        nextMap.manualOnRelease = function(){
+    nextMap = new WoodenSquareButton("Next Map", windowWidth/2 - btnTexture.width/2, 700);
+    nextMap.manualOnRelease = function(){
+        if(level > 0)
+        {
             level += 1;
             isLoaded = false;
             scene = GAMEPLAY;
@@ -87,7 +87,7 @@ function drawGameOver(){
         ingameUI.textAlign(CENTER, CENTER);
         ingameUI.text(s, windowWidth/2, 350);
 
-        if(level < 10){
+        if(between(level, 1, 10 ) ){
             if(unlock){
                 s = 'Level ' + (level + 1) + ' unlocked!';
                 ingameUI.text(s, windowWidth/2, 400);
