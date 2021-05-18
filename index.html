@@ -8,10 +8,13 @@
 	<script type="text/javascript" src="js/gui.js"></script>
 	<script type="text/javascript" src="js/scenes.js"></script>
 	<style>
-	html, body {margin:0; padding:0; overflow:hidden;} </style>
+		html, body {margin:0; padding:0; overflow:hidden;} 
+		#file { display:none; } 
+	</style>
   <link rel="shortcut icon" href="#">
 </head>
 <body>
 	<script type="text/javascript" src="js/engine.js"></script>
+	<input type="file" id="file" name="file" onchange="loadCustomLevel(this.files[0])" />
 </body>
 </html>
