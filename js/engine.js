@@ -945,7 +945,6 @@ function shaderUniforms()
 
 function ingame()
 {
-	orbitControl();
 	shaderUniforms();
 	let isRotating=false;
 	isRotating = world.operate(ball);
