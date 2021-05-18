@@ -29,6 +29,7 @@ let scene = 0;
 let level, unlock;
 let attempt=0, parScore;
 let buttonClickSound, swingSound, tadaSound, failSound;
+let isCustomLevel = false;
 
 function fetchLevelData(level, callback)
 {
@@ -837,6 +838,28 @@ function loadLevel(level)
 		attempt=0; parScore=json.par;});
 }
 
+function loadCustomLevel(file)
+{
+    if(file.type != "application/json")
+    {
+    	alert("Invalid File! Import .json file.");
+    	return false;
+    }
+    isLoaded = false;
+    scene = GAMEPLAY;
+    let reader = new FileReader();
+    reader.onload = function(event)
+    {
+    	let data = event.target.result;
+    	data = JSON.parse(data.replace(/u'(?=[^:]+')/g, "'"));
+    	world.loadLevel(data);
+		ball.initialize(world);
+		isLoaded=true;
+		attempt=0; parScore= typeof(data.par) === "number" ? data.par : 3 ;
+    }
+    reader.readAsText(file);
+}
+
 function restartLevel()
 {
 	world.resetFacing();
@@ -913,7 +936,10 @@ function draw()
 				drawIngameUI();
 				overlayGUI();
 			}
-			else loadLevel(level);
+			else
+			{
+				if(level >= 1) loadLevel(level);
+			}
 			break;
 		case GAME_OVER:
 			drawGameOver();
@@ -945,6 +971,7 @@ function shaderUniforms()
 
 function ingame()
 {
+	orbitControl();
 	shaderUniforms();
 	let isRotating=false;
 	isRotating = world.operate(ball);

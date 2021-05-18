@@ -8,7 +8,9 @@ function setupIntro(){
     }
 
     importMap = new WoodenSquareButton("Import Map", windowWidth/2 - btnTexture.width/2, 600);
-    
+    importMap.manualOnRelease = function(){
+        document.getElementById("file").click();
+    }
     ingameUI.noStroke();
 }
 
@@ -56,11 +58,14 @@ function setupGameOver(){
         restartLevel();
         scene = GAMEPLAY;
     }
-    nextMap = new WoodenSquareButton("Next Map", windowWidth/2 - btnTexture.width/2, 700);
-    nextMap.manualOnRelease = function(){
-        level += 1;
-        isLoaded = false;
-        scene = GAMEPLAY;
+    if(level >= 1)
+    {
+        nextMap = new WoodenSquareButton("Next Map", windowWidth/2 - btnTexture.width/2, 700);
+        nextMap.manualOnRelease = function(){
+            level += 1;
+            isLoaded = false;
+            scene = GAMEPLAY;
+        }
     }
 }
 
