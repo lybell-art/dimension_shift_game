@@ -910,6 +910,7 @@ function setup()
 {
 	frameRate(60);
 	createCanvas(windowWidth,windowHeight, WEBGL);
+	pixelDensity(1);
 	ingameUI = createGraphics(windowWidth, windowHeight);
 	ortho(-width/2, width/2, -height/2, height/2, -2000, 2000);
 	world=new cubeSpace();
